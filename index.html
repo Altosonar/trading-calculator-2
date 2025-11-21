@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* All the CSS styles remain exactly the same as before except for the tab navigation */
+        /* All CSS remains exactly the same as before */
         :root {
             --primary: #4361ee;
             --primary-light: #4895ef;
@@ -1499,6 +1499,11 @@
     let selectedDayForTrade = null;
     let tradeToDelete = null;
 
+    // NEW: Swipe navigation variables
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const swipeThreshold = 50; // Minimum distance for a swipe
+
     // Initialize the calculator when the page loads
     document.addEventListener('DOMContentLoaded', function() {
         initializeCalculator();
@@ -1508,6 +1513,9 @@
         setupCalendarNavigation();
         generateCalendar();
         setupModal();
+        
+        // NEW: Setup swipe navigation
+        setupSwipeNavigation();
         
         // Set today's date as default for trade log
         const today = "2025-11-20"; // Fixed to November 20, 2025
@@ -1520,6 +1528,74 @@
         // Load sample data for current month
         loadSampleData();
     });
+
+    // NEW: Setup swipe navigation functionality
+    function setupSwipeNavigation() {
+        const calculatorContent = document.querySelector('.calculator-content');
+        
+        calculatorContent.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        calculatorContent.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+    }
+
+    // NEW: Handle swipe gesture
+    function handleSwipe() {
+        const swipeDistance = touchEndX - touchStartX;
+        
+        // Check if swipe distance meets the threshold
+        if (Math.abs(swipeDistance) < swipeThreshold) return;
+        
+        if (swipeDistance > 0) {
+            // Swipe right - go to previous tab
+            navigateToPreviousTab();
+        } else {
+            // Swipe left - go to next tab
+            navigateToNextTab();
+        }
+    }
+
+    // NEW: Navigate to the next tab
+    function navigateToNextTab() {
+        const tabs = ['strategy-tab', 'add-trade-tab', 'calendar-tab'];
+        const currentTab = document.querySelector('.tab-content.active').id;
+        const currentIndex = tabs.indexOf(currentTab);
+        const nextIndex = (currentIndex + 1) % tabs.length;
+        
+        switchToTab(tabs[nextIndex]);
+    }
+
+    // NEW: Navigate to the previous tab
+    function navigateToPreviousTab() {
+        const tabs = ['strategy-tab', 'add-trade-tab', 'calendar-tab'];
+        const currentTab = document.querySelector('.tab-content.active').id;
+        const currentIndex = tabs.indexOf(currentTab);
+        const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        
+        switchToTab(tabs[prevIndex]);
+    }
+
+    // NEW: Switch to a specific tab
+    function switchToTab(tabId) {
+        // Update active tab button
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+        
+        // Update active tab content
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+        
+        // Refresh trade log if we're switching to that tab
+        if (tabId === 'add-trade-tab') {
+            loadTradeHistory();
+        }
+    }
 
     function initializeCalculator() {
         // Set up dark mode toggle
@@ -1671,21 +1747,7 @@
         tabButtons.forEach(button => {
             button.addEventListener('click', function() {
                 const tabId = this.getAttribute('data-tab');
-                
-                // Update active tab button
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Update active tab content
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                document.getElementById(tabId).classList.add('active');
-                
-                // Refresh trade log if we're switching to that tab
-                if (tabId === 'add-trade-tab') {
-                    loadTradeHistory();
-                }
+                switchToTab(tabId);
             });
         });
     }
