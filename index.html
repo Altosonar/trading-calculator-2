@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Futures Trading Calculator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        /* All the CSS styles remain exactly the same as before except for the tab navigation */
         :root {
             --primary: #4361ee;
             --primary-light: #4895ef;
@@ -65,6 +68,7 @@
             align-items: flex-start;
             font-size: 16px;
             transition: var(--transition);
+            padding: 8px;
         }
         
         .calculator-container {
@@ -79,6 +83,8 @@
             display: flex;
             flex-direction: column;
             transition: var(--transition);
+            margin: 0 auto;
+            padding: 0;
         }
         
         .calculator-header {
@@ -126,52 +132,38 @@
             transform: scale(1.05);
         }
 
-        .mobile-menu {
-            display: none;
-            position: absolute;
-            top: 70px;
-            right: 15px;
+        /* UPDATED: Bottom Navigation */
+        .tab-navigation {
+            display: flex;
             background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            z-index: 100;
-            overflow: hidden;
-            min-width: 180px;
-            transition: var(--transition);
+            border-top: 1px solid var(--border);
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
         }
         
-        .mobile-menu.active {
-            display: block;
-        }
-        
-        .mobile-menu-item {
-            display: block;
-            width: 100%;
-            padding: 15px 20px;
+        .tab-button {
+            flex: 1;
             background: none;
             border: none;
-            text-align: left;
-            font-size: 16px;
-            color: var(--dark);
+            padding: 12px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray);
             cursor: pointer;
-            border-bottom: 1px solid var(--border);
             transition: var(--transition);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
         }
         
-        .mobile-menu-item:last-child {
-            border-bottom: none;
+        .tab-button.active {
+            color: var(--primary);
         }
         
-        .mobile-menu-item:hover {
-            background: var(--light-gray);
-        }
-        
-        .mobile-menu-item.active {
-            background: var(--primary);
-            color: white;
+        .tab-button i {
+            font-size: 20px;
         }
 
         .calculator-content {
@@ -179,17 +171,15 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            padding-bottom: 0;
         }
         
-        .tab-navigation {
-            display: none; 
-        }
-
         .tab-content {
             display: none;
             flex: 1;
             overflow-y: auto;
             padding: 20px 15px;
+            padding-bottom: 20px;
         }
         
         .tab-content.active {
@@ -307,100 +297,6 @@
         .dark-mode .input-with-unit .unit {
             background: var(--light);
             color: var(--dark);
-        }
-
-        /* Contract Size Toggle Buttons */
-        .contract-size-toggle {
-            display: flex;
-            width: 100%;
-            border: 1px solid var(--primary);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-top: 5px;
-        }
-
-        .contract-size-btn {
-            flex: 1;
-            padding: 12px 10px;
-            border: none;
-            background: var(--light);
-            color: var(--primary);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .dark-mode .contract-size-btn {
-            background: var(--input-bg);
-            color: var(--primary);
-        }
-
-        .contract-size-btn:first-child {
-            border-right: 1px solid var(--primary);
-        }
-
-        .contract-size-btn.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .contract-size-btn:disabled {
-            background: var(--light-gray);
-            color: var(--gray);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .dark-mode .contract-size-btn:disabled {
-            background: var(--light);
-            color: var(--gray);
-        }
-
-        .no-mini-message {
-            color: var(--warning);
-            font-size: 14px;
-            margin-top: 8px;
-            text-align: center;
-            font-style: italic;
-        }
-
-        /* Exit Mode Toggle */
-        .exit-mode-toggle {
-            display: flex;
-            width: 100%;
-            border: 1px solid var(--primary);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-
-        .exit-mode-btn {
-            flex: 1;
-            padding: 12px 10px;
-            border: none;
-            background: var(--light);
-            color: var(--primary);
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .dark-mode .exit-mode-btn {
-            background: var(--input-bg);
-            color: var(--primary);
-        }
-
-        .exit-mode-btn:first-child {
-            border-right: 1px solid var(--primary);
-        }
-
-        .exit-mode-btn.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
         }
 
         /* Results Display */
@@ -567,11 +463,614 @@
             background: rgba(230, 57, 70, 0.1);
         }
         
+        /* Strategy Section */
+        .strategy-section {
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .strategy-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .strategy-stat {
+            text-align: center;
+        }
+        
+        .strategy-stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        
+        .strategy-stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .strategy-explanation {
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 20px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            height: 12px;
+            background: var(--light-gray);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success) 0%, var(--primary) 100%);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        /* Trade Entry Form */
+        .trade-entry-form {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* PDF Buttons */
+        .pdf-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .pdf-button {
+            flex: 1;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .pdf-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .pdf-button.preview {
+            background: var(--primary);
+        }
+        
+        .pdf-button.download {
+            background: var(--success);
+        }
+        
+        /* Character Counter for Notes */
+        .notes-container {
+            position: relative;
+        }
+        
+        .character-counter {
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            font-size: 12px;
+            color: var(--gray);
+            background: var(--card-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        
+        .character-counter.warning {
+            color: var(--warning);
+            font-weight: 600;
+        }
+        
+        .character-counter.error {
+            color: var(--danger);
+            font-weight: 700;
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: var(--light);
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            font-weight: normal;
+        }
+        
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--dark) transparent transparent transparent;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
         /* Utility */
         .hidden { display: none !important; }
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
+
+        /* Print Styles */
+        @media print {
+            .tab-navigation, .header-actions, .action-button, .pdf-button {
+                display: none !important;
+            }
+            
+            .calculator-container {
+                max-width: 100%;
+                box-shadow: none;
+                height: auto;
+            }
+            
+            .tab-content {
+                display: block !important;
+                padding: 10px;
+            }
+            
+            .input-card, .trade-entry-form {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+            
+            body {
+                background: white;
+                color: black;
+            }
+        }
+
+        /* Calendar Styles */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-nav {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .calendar-nav:hover {
+            background: var(--primary-dark);
+        }
+        
+        .calendar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            margin-bottom: 20px;
+            background-color: var(--border);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            color: var(--gray);
+            font-size: 14px;
+            padding: 10px 5px;
+            background-color: var(--light-gray);
+        }
+        
+        .calendar-day {
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            padding: 8px 4px;
+            min-height: 90px;
+            border: none;
+        }
+        
+        .calendar-day:hover {
+            background: var(--light);
+        }
+        
+        .calendar-day.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .calendar-day.other-month {
+            opacity: 0.5;
+            background: var(--light);
+        }
+        
+        .calendar-day.has-trades {
+            background: var(--light);
+        }
+        
+        .day-number {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .day-pnl {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .day-pnl.positive {
+            color: var(--success);
+        }
+        
+        .day-pnl.negative {
+            color: var(--danger);
+        }
+        
+        .calendar-day.active .day-pnl {
+            color: white;
+        }
+        
+        .day-trade-count {
+            font-size: 12px;
+            color: var(--gray);
+        }
+        
+        .calendar-day.active .day-trade-count {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Modal for Day Details */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray);
+        }
+        
+        .modal-title {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .day-trades-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* NEW: Trade Preview Styles */
+        .trade-preview {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--primary);
+            z-index: 100;
+            max-width: 90%;
+            width: 350px;
+            text-align: center;
+            animation: fadeInOut 3s forwards;
+        }
+        
+        .trade-preview-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .trade-preview-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .trade-preview-item {
+            text-align: left;
+        }
+        
+        .trade-preview-label {
+            font-size: 12px;
+            color: var(--gray);
+            margin-bottom: 2px;
+        }
+        
+        .trade-preview-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .trade-preview-pnl {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+        
+        .trade-preview-pnl.positive {
+            color: var(--success);
+        }
+        
+        .trade-preview-pnl.negative {
+            color: var(--danger);
+        }
+        
+        .trade-preview-success {
+            color: var(--success);
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            10% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+        
+        /* NEW: Success Notification Styles */
+        .success-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--success);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeInOut 2s forwards;
+        }
+        
+        /* Confirmation Dialog Styles */
+        .confirmation-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--warning);
+            z-index: 1001;
+            max-width: 90%;
+            width: 300px;
+            text-align: center;
+        }
+        
+        .confirmation-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--warning);
+        }
+        
+        .confirmation-message {
+            margin-bottom: 20px;
+            color: var(--dark);
+        }
+        
+        .confirmation-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .confirmation-button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+        
+        .confirm-delete {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .cancel-delete {
+            background: var(--light-gray);
+            color: var(--dark);
+        }
+
+        /* Responsive breakpoint for mobile devices */
+        @media (max-width: 480px) {
+            .calculator-container {
+                height: 100vh;
+                max-height: 100vh;
+            }
+            
+            body {
+                padding: 0;
+            }
+            
+            .calculator-header {
+                padding: 15px 10px;
+            }
+            
+            .calculator-title {
+                font-size: 18px;
+            }
+            
+            .tab-button {
+                padding: 12px 8px;
+                font-size: 12px;
+            }
+            
+            .tab-content {
+                padding: 15px 10px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+            
+            .input-card, .trade-entry-form {
+                padding: 15px;
+            }
+            
+            .result-value {
+                font-size: 24px;
+            }
+            
+            .calendar-day {
+                min-height: 80px;
+                padding: 6px 3px;
+            }
+            
+            .day-number {
+                font-size: 14px;
+            }
+            
+            .day-pnl {
+                font-size: 12px;
+            }
+            
+            .day-trade-count {
+                font-size: 10px;
+            }
+            
+            .trade-preview {
+                width: 90%;
+                padding: 15px;
+            }
+            
+            .trade-preview-content {
+                grid-template-columns: 1fr;
+            }
+        }
         
     </style>
 </head>
@@ -581,980 +1080,1342 @@
     <header class="calculator-header">
         <h1 class="calculator-title">
             <i class="fas fa-chart-line"></i>
-            Futures PnL
+            Futures Trader Pro
         </h1>
         <div class="header-actions">
             <button class="header-btn" id="darkModeToggle" aria-label="Toggle Dark Mode">
                 <i class="fas fa-moon"></i>
             </button>
-            <button class="header-btn" id="mobileMenuBtn" aria-label="Menu">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-        <div class="mobile-menu" id="mobileMenu">
-            <button class="mobile-menu-item active" data-tab-id="pnl-calc-tab">
-                <i class="fas fa-calculator"></i> Calculator
-            </button>
-            <button class="mobile-menu-item" data-tab-id="trade-log-tab">
-                <i class="fas fa-history"></i> Trade Log (Setups)
-            </button>
         </div>
     </header>
 
     <div class="calculator-content">
-        <div class="tab-navigation">
-            <button class="tab-button active" data-tab="pnl-calc-tab"><i class="fas fa-calculator"></i> Calculator</button>
-            <button class="tab-button" data-tab="trade-log-tab"><i class="fas fa-history"></i> Trade Log</button>
-        </div>
-
-        <div class="tab-content active" id="pnl-calc-tab">
+        <!-- Strategy Tab -->
+        <div class="tab-content active" id="strategy-tab">
             <div class="section">
-                <h2 class="section-title"><i class="fas fa-handshake"></i> Contract Selection</h2>
+                <h2 class="section-title"><i class="fas fa-wallet"></i> Account Setup</h2>
                 <div class="input-card">
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="category-select" class="form-label"><i class="fas fa-layer-group"></i> Futures Category</label>
-                        <select id="category-select" class="form-select">
-                            <!-- Populated by JavaScript -->
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="contract-select" class="form-label"><i class="fas fa-cube"></i> Contract</label>
-                        <select id="contract-select" class="form-select">
-                            <!-- Populated by JavaScript -->
-                        </select>
-                    </div>
-
                     <div class="form-group">
-                        <label class="form-label"><i class="fas fa-grip-lines-vertical"></i> Contract Size</label>
-                        <div class="contract-size-toggle" id="contract-size-toggle">
-                            <button class="contract-size-btn active" data-size="Mini" id="mini-btn">Mini</button>
-                            <button class="contract-size-btn" data-size="Micro" id="micro-btn">Micro</button>
-                        </div>
-                        <div class="no-mini-message hidden" id="no-mini-message">
-                            No Mini contracts available for this category
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title"><i class="fas fa-cogs"></i> Trade Parameters</h2>
-                <div class="input-card">
-                    
-                    <div class="two-column-layout">
-                        <div class="form-group">
-                            <label for="trade-direction" class="form-label"><i class="fas fa-arrow-right-arrow-left"></i> Direction</label>
-                            <select id="trade-direction" class="form-select">
-                                <option value="Long">Long (Buy)</option>
-                                <option value="Short">Short (Sell)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="contracts" class="form-label"><i class="fas fa-boxes-stacked"></i> Contracts</label>
-                            <input type="number" id="contracts" class="form-input" value="1" min="1" step="1">
+                        <label for="account-capital" class="form-label"><i class="fas fa-piggy-bank"></i> Account Capital</label>
+                        <div class="input-with-unit">
+                            <input type="number" id="account-capital" class="form-input" value="1200" min="0" step="100">
+                            <span class="unit">USD</span>
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="entry-price" class="form-label"><i class="fas fa-money-bill-transfer"></i> Entry Price</label>
+                        <label for="risk-percentage" class="form-label"><i class="fas fa-exclamation-triangle"></i> Risk Per Trade (%)</label>
                         <div class="input-with-unit">
-                            <input type="number" id="entry-price" class="form-input" value="19000" step="0.25">
-                            <span class="unit">Price</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="input-card">
-                    <div class="exit-mode-toggle">
-                        <button class="exit-mode-btn active" data-mode="planned">Planned Trade (TP/SL)</button>
-                        <button class="exit-mode-btn" data-mode="actual">Actual Exit</button>
-                    </div>
-                    
-                    <div id="planned-exit-inputs">
-                        <h3 class="form-label" style="font-size: 16px; margin-bottom: 10px;"><i class="fas fa-bullseye"></i> Exit Targets</h3>
-                        <div class="two-column-layout">
-                            <div class="form-group">
-                                <label for="take-profit" class="form-label">Take Profit (TP)</label>
-                                <div class="input-with-unit">
-                                    <input type="number" id="take-profit" class="form-input" value="19025" step="0.25">
-                                    <span class="unit">Price</span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="stop-loss" class="form-label">Stop Loss (SL)</label>
-                                <div class="input-with-unit">
-                                    <input type="number" id="stop-loss" class="form-input" value="18990" step="0.25">
-                                    <span class="unit">Price</span>
-                                </div>
-                            </div>
+                            <input type="number" id="risk-percentage" class="form-input" value="3" min="0.1" max="10" step="0.1">
+                            <span class="unit">%</span>
                         </div>
                     </div>
                     
-                    <div id="actual-exit-inputs" style="display: none;">
-                        <h3 class="form-label" style="font-size: 16px; margin-bottom: 10px;"><i class="fas fa-door-open"></i> Actual Exit</h3>
-                        <div class="form-group">
-                            <label for="exit-price" class="form-label">Exit Price</label>
-                            <div class="input-with-unit">
-                                <input type="number" id="exit-price" class="form-input" value="1600" step="0.25">
-                                <span class="unit">Price</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 15px;">
-                        <label for="commission" class="form-label"><i class="fas fa-hand-holding-dollar"></i> Commission (Per Side/Per Contract)</label>
+                    <div class="form-group">
+                        <label for="goal-profit" class="form-label"><i class="fas fa-trophy"></i> Goal Profit</label>
                         <div class="input-with-unit">
-                            <input type="number" id="commission" class="form-input" value="0.50" min="0" step="0.01">
+                            <input type="number" id="goal-profit" class="form-input" value="144" min="0" step="100">
                             <span class="unit">USD</span>
                         </div>
                     </div>
                 </div>
-                
-                <button class="action-button" onclick="calculateTrade()">
-                    <i class="fas fa-calculator"></i> Calculate PnL & Risk
-                </button>
             </div>
-            
-            <div class="section" id="results-section" style="margin-bottom: 40px; display: none;">
-                <h2 class="section-title"><i class="fas fa-chart-area"></i> Trade Results Summary</h2>
-                
-                <div class="results-grid" id="planned-results">
-                    <div class="result-card">
-                        <div class="result-title">Potential Profit (Net)</div>
-                        <div class="result-value profit" id="profit-value">$0.00</div>
+
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-cogs"></i> Trading Strategy</h2>
+                <div class="input-card">
+                    <div class="two-column-layout">
+                        <div class="form-group">
+                            <label for="win-rate" class="form-label"><i class="fas fa-chart-line"></i> Win Rate (%)</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="win-rate" class="form-input" value="37.5" min="1" max="99" step="1">
+                                <span class="unit">%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="risk-reward" class="form-label"><i class="fas fa-balance-scale"></i> Risk:Reward Ratio</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="risk-reward" class="form-input" value="3" min="0.5" max="10" step="0.1">
+                                <span class="unit">R:R</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="result-card">
-                        <div class="result-title">Potential Loss (Net Risk)</div>
-                        <div class="result-value loss" id="loss-value">$0.00</div>
+                    
+                    <div class="dashboard-row">
+                        <span class="dashboard-label">Expected Value Per Trade</span>
+                        <span class="dashboard-value positive" id="expected-value">$18.00</span>
                     </div>
-                    <div class="result-card">
-                        <div class="result-title">Risk:Reward Ratio</div>
-                        <div class="result-value risk-reward" id="rr-ratio-value">0.0:1</div>
+                    
+                    <div class="dashboard-row">
+                        <span class="dashboard-label">Risk Per Trade</span>
+                        <span class="dashboard-value" id="risk-per-trade">$36.00</span>
                     </div>
-                    <div class="result-card">
-                        <div class="result-title">Total Commission</div>
-                        <div class="result-value size" id="commission-total-value">$0.00</div>
+                    
+                    <div class="dashboard-row">
+                        <span class="dashboard-label">Reward Per Trade</span>
+                        <span class="dashboard-value positive" id="reward-per-trade">$108.00</span>
                     </div>
                 </div>
-
-                <div class="results-grid" id="actual-results" style="display: none;">
+            </div>
+            
+            <div class="section" id="results-section">
+                <h2 class="section-title"><i class="fas fa-chart-area"></i> Goal Analysis</h2>
+                
+                <div class="results-grid">
                     <div class="result-card">
-                        <div class="result-title">Actual PnL (Net)</div>
-                        <div class="result-value" id="actual-pnl-value">$0.00</div>
+                        <div class="result-title">Trades Needed</div>
+                        <div class="result-value" id="trades-needed">8</div>
                     </div>
                     <div class="result-card">
-                        <div class="result-title">Total Commission</div>
-                        <div class="result-value size" id="actual-commission-value">$0.00</div>
+                        <div class="result-title">Winning Trades</div>
+                        <div class="result-value profit" id="winning-trades">3</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-title">Losing Trades</div>
+                        <div class="result-value loss" id="losing-trades">5</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-title">Time (Days)</div>
+                        <div class="result-value size" id="time-days">1</div>
                     </div>
                 </div>
 
                 <div class="input-card" style="margin-top: 15px;">
                     <div class="dashboard-row">
-                        <span class="dashboard-label">Profit Points / Ticks</span>
-                        <span class="dashboard-value" id="profit-points-value">0.00 / 0</span>
+                        <span class="dashboard-label">Total Risk Capital</span>
+                        <span class="dashboard-value" id="total-risk">$180.00</span>
                     </div>
                     <div class="dashboard-row">
-                        <span class="dashboard-label">Loss Points / Ticks</span>
-                        <span class="dashboard-value" id="loss-points-value">0.00 / 0</span>
+                        <span class="dashboard-label">Account After Goal</span>
+                        <span class="dashboard-value positive" id="account-after-goal">$1,344.00</span>
                     </div>
                     <div class="dashboard-row">
-                        <span class="dashboard-label">Contract Value / Tick Value</span>
-                        <span class="dashboard-value" id="point-value-display">$20.00 / $5.00 (NQ)</span>
+                        <span class="dashboard-label">Daily Profit</span>
+                        <span class="dashboard-value positive" id="daily-profit">$144.00</span>
                     </div>
                 </div>
-
-                <button class="action-button" onclick="logTrade()" id="log-trade-btn" disabled>
-                    <i class="fas fa-plus"></i> Log Setup to History
-                </button>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>Goal Progress</span>
+                        <span id="progress-percent">89.3%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 89.3%"></div>
+                    </div>
+                </div>
             </div>
+            
+            <button class="action-button" onclick="calculateGoal()">
+                <i class="fas fa-calculator"></i> Calculate Trading Plan
+            </button>
         </div>
 
-        <div class="tab-content" id="trade-log-tab">
+        <!-- Add a Trade Tab -->
+        <div class="tab-content" id="add-trade-tab">
             <div class="section">
-                <h2 class="section-title"><i class="fas fa-book"></i> Trade Setup History</h2>
+                <h2 class="section-title"><i class="fas fa-plus-circle"></i> Log New Trade</h2>
+                <div class="trade-entry-form">
+                    <!-- Reordered form rows to match image exactly -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="asset-class-select" class="form-label">Asset Class</label>
+                            <select id="asset-class-select" class="form-select">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="symbol-size-select" class="form-label">Symbol/Size</label>
+                            <select id="symbol-size-select" class="form-select">
+                                <!-- Options will be populated based on asset class selection -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-open-date" class="form-label">Open Date</label>
+                            <input type="date" id="trade-open-date" class="form-input" value="2025-11-20">
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-exit-date" class="form-label">Exit Date</label>
+                            <input type="date" id="trade-exit-date" class="form-input" value="2025-11-20">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-entry" class="form-label">Entry Price</label>
+                            <input type="number" id="trade-entry" class="form-input" value="19000" step="0.25">
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-exit" class="form-label">Exit Price</label>
+                            <input type="number" id="trade-exit" class="form-input" value="19025" step="0.25">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-direction" class="form-label">Direction</label>
+                            <select id="trade-direction" class="form-select">
+                                <option value="Long/Buy">Long/Buy</option>
+                                <option value="Short/Sell">Short/Sell</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-strategy" class="form-label">Strategy</label>
+                            <select id="trade-strategy" class="form-select">
+                                <option value="Up Trend/L.B">Up Trend/L.B</option>
+                                <option value="DN Trend/L.B">DN Trend/L.B</option>
+                                <option value="Double Top">Double Top</option>
+                                <option value="Double Bottom">Double Bottom</option>
+                                <option value="Res.Pullback">Res.Pullback</option>
+                                <option value="Sup.Pullback">Sup.Pullback</option>
+                                <option value="Pivot Reversal.">Pivot Reversal.</option>
+                                <option value="Fibonachi.61.8%">Fibonachi.61.8%</option>
+                                <option value="Fibonachi.50%">Fibonachi.50%</option>
+                                <option value="SMA-Crossover">SMA-Crossover</option>
+                                <option value="Reg.H&S/Bear">Reg.H&S/Bear</option>
+                                <option value="Inver.H&S/bull">Inver.H&S/bull</option>
+                                <option value="Rise Wedge/Bear">Rise Wedge/Bear</option>
+                                <option value="Fall Wedge/Bull">Fall Wedge/Bull</option>
+                                <option value="Flag Rise/Bull">Flag Rise/Bull</option>
+                                <option value="Flag Fall/Bear">Flag Fall/Bear</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="time-frame" class="form-label">Time Frame</label>
+                            <select id="time-frame" class="form-select">
+                                <option value="1 Min">TF: 1 Min</option>
+                                <option value="5 Min">TF: 5 Min</option>
+                                <option value="15 Min">TF: 15 Min</option>
+                                <option value="30 Min">TF: 30 Min</option>
+                                <option value="1 Hr">TF: 1 Hr</option>
+                                <option value="4 Hrs">TF: 4 Hrs</option>
+                                <option value="1 Day">TF: 1 Day</option>
+                                <option value="1 Month">TF: 1 Month</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-stop-loss" class="form-label">Stop Loss</label>
+                            <input type="number" id="trade-stop-loss" class="form-input" value="18975" step="0.25">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-status" class="form-label">Status</label>
+                            <select id="trade-status" class="form-select">
+                                <option value="Win">Win</option>
+                                <option value="Loss">Loss</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-rr" class="form-label">R:R Ratio</label>
+                            <select id="trade-rr" class="form-select">
+                                <option value="1:1">1:1</option>
+                                <option value="1:1.5">1:1.5</option>
+                                <option value="1:2">1:2</option>
+                                <option value="1:2.5">1:2.5</option>
+                                <option value="1:3" selected>1:3</option>
+                                <option value="1:3.5">1:3.5</option>
+                                <option value="1:4">1:4</option>
+                                <option value="1:4.5">1:4.5</option>
+                                <option value="1:5">1:5</option>
+                                <option value="1:5.5">1:5.5</option>
+                                <option value="1:6">1:6</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-contracts" class="form-label">Contracts</label>
+                            <input type="number" id="trade-contracts" class="form-input" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-commission" class="form-label">Commission</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="trade-commission" class="form-input" value="2.50" step="0.01">
+                                <span class="unit">USD</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trade-pnl" class="form-label">PnL $</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="trade-pnl" class="form-input" value="108" step="0.01">
+                                <span class="unit">USD</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="trade-pnl-percent" class="form-label">PnL %</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="trade-pnl-percent" class="form-input" value="9.0" step="0.1">
+                                <span class="unit">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group notes-container" style="flex: 2;">
+                            <label for="trade-notes" class="form-label tooltip">
+                                Notes
+                                <span class="tooltiptext">Maximum 100 characters. Keep notes short and focused.</span>
+                            </label>
+                            <textarea id="trade-notes" class="form-input" placeholder="Trade setup notes (max 100 characters)" rows="3" maxlength="100"></textarea>
+                            <div class="character-counter" id="notes-counter">100/100</div>
+                        </div>
+                    </div>
+                    
+                    <button class="action-button" onclick="logTrade()">
+                        <i class="fas fa-save"></i> Save Trade
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-book"></i> Trade History</h2>
                 <div class="trade-list-container">
                     <ul class="trade-list" id="trade-history-list">
+                        <!-- Trade items will be inserted here by JavaScript -->
                     </ul>
-                    <p id="no-trades-message" style="text-align: center; color: var(--gray); margin-top: 20px;">No trade setups logged yet.</p>
+                    <p id="no-trades-message" style="text-align: center; color: var(--gray); margin-top: 20px;">No trades logged yet.</p>
                 </div>
-            </div>
-            <div class="section" style="border-top: 1px solid var(--border); padding-top: 20px;">
-                <h2 class="section-title"><i class="fas fa-square-poll-vertical"></i> Log Summary</h2>
-                <div class="dashboard-row">
-                    <span class="dashboard-label">Trade Setups Logged</span>
-                    <span class="dashboard-value" id="total-trades-summary">0</span>
+                
+                <div class="pdf-buttons">
+                    <button class="pdf-button preview" onclick="previewPDF()">
+                        <i class="fas fa-eye"></i> Preview PDF
+                    </button>
+                    <button class="pdf-button download" onclick="downloadPDF()">
+                        <i class="fas fa-download"></i> Download PDF
+                    </button>
                 </div>
-                <button class="action-button" style="background: var(--danger);" onclick="clearTradeLog()">
-                    <i class="fas fa-trash-can"></i> Clear Log
-                </button>
             </div>
         </div>
+
+        <!-- Calendar Tab -->
+        <div class="tab-content" id="calendar-tab">
+            <div class="section">
+                <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Trading Calendar</h2>
+                
+                <div class="calendar-header">
+                    <button class="calendar-nav" id="prev-month">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="calendar-title" id="current-month">November 2025</div>
+                    <button class="calendar-nav" id="next-month">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <div class="calendar-grid" id="calendar-days">
+                    <!-- Calendar days will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOVED: Bottom Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-button active" data-tab="strategy-tab">
+            <i class="fas fa-chess-knight"></i>
+            <span>Strategy</span>
+        </button>
+        <button class="tab-button" data-tab="add-trade-tab">
+            <i class="fas fa-plus-circle"></i>
+            <span>Add a Trade</span>
+        </button>
+        <button class="tab-button" data-tab="calendar-tab">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Calendar</span>
+        </button>
+    </div>
+</div>
+
+<!-- Day Details Modal -->
+<div id="day-details-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3 class="modal-title" id="modal-date-title">Trades for November 20, 2025</h3>
+        <div class="day-trades-list" id="day-trades-list">
+            <!-- Day trades will be populated here -->
+        </div>
+        <div id="no-trades-for-day" style="text-align: center; padding: 20px; color: var(--gray);">
+            No trades for this day
+        </div>
+        <button class="action-button" onclick="openAddTradeForSelectedDay()" style="margin-top: 15px;">
+            <i class="fas fa-plus-circle"></i> Add Trade to This Day
+        </button>
     </div>
 </div>
 
 <script>
-    // --- Configuration: Futures Contract Specifications (Complete Structure) ---
+    // Futures contracts data organized by Asset Class - MATCHING THE IMAGE EXACTLY
     const CONTRACTS_DATA = {
-        'Equity Index Futures': {
-            'ES': { 
-                name: 'S&P 500', 
-                Mini: { name: 'E-mini S&P 500 (ES)', value: 50.00, tickSize: 0.25, tickValue: 12.50 },
-                Micro: { name: 'Micro E-mini S&P 500 (MES)', value: 5.00, tickSize: 0.25, tickValue: 1.25 }
-            },
-            'NQ': { 
-                name: 'Nasdaq-100', 
-                Mini: { name: 'E-mini Nasdaq-100 (NQ)', value: 20.00, tickSize: 0.25, tickValue: 5.00 },
-                Micro: { name: 'Micro E-mini Nasdaq-100 (MNQ)', value: 2.00, tickSize: 0.25, tickValue: 0.50 }
-            },
-            'YM': { 
-                name: 'Dow Jones', 
-                Mini: { name: 'E-mini Dow Jones (YM)', value: 5.00, tickSize: 1.00, tickValue: 5.00 },
-                Micro: { name: 'Micro E-mini Dow Jones (MYM)', value: 0.50, tickSize: 1.00, tickValue: 0.50 }
-            },
-            'RTY': { 
-                name: 'Russell 2000', 
-                Mini: { name: 'E-mini Russell 2000 (RTY)', value: 50.00, tickSize: 0.10, tickValue: 5.00 },
-                Micro: { name: 'Micro E-mini Russell 2000 (M2K)', value: 5.00, tickSize: 0.10, tickValue: 0.50 }
-            },
-            'EMD': { 
-                name: 'S&P MidCap 400', 
-                Mini: { name: 'E-mini S&P MidCap 400 (EMD)', value: 100.00, tickSize: 0.10, tickValue: 10.00 },
-                Micro: { name: 'Micro E-mini S&P MidCap 400 (MMC)', value: 10.00, tickSize: 0.10, tickValue: 1.00 }
-            },
-            'VXM': { 
-                name: 'VIX Index', 
-                Mini: { name: 'CBOE Mini VIX (VXM)', value: 100.00, tickSize: 0.05, tickValue: 5.00 },
-                Micro: null
-            }
-        },
-        'Energy Futures': {
-            'QM': { 
-                name: 'WTI Crude Oil', 
-                Mini: { name: 'E-mini Crude Oil (QM)', value: 500.00, tickSize: 0.025, tickValue: 12.50 },
-                Micro: { name: 'Micro WTI Crude Oil (MCL)', value: 100.00, tickSize: 0.01, tickValue: 1.00 }
-            },
-            'QN': { 
-                name: 'Natural Gas', 
-                Mini: { name: 'E-mini Natural Gas (QN)', value: 2500.00, tickSize: 0.005, tickValue: 12.50 },
-                Micro: { name: 'Micro Natural Gas (MNG)', value: 2500.00, tickSize: 0.001, tickValue: 2.50 }
-            },
-            'QRB': { 
-                name: 'RBOB Gasoline', 
-                Mini: { name: 'E-mini RBOB Gasoline (QRB)', value: 21000.00, tickSize: 0.0001, tickValue: 2.10 },
-                Micro: { name: 'Micro RBOB Gasoline (MRB)', value: 4200.00, tickSize: 0.0001, tickValue: 0.42 }
-            },
-            'QH': { 
-                name: 'Heating Oil', 
-                Mini: { name: 'E-mini Heating Oil (QH)', value: 21000.00, tickSize: 0.0001, tickValue: 2.10 },
-                Micro: { name: 'Micro Heating Oil (MHO)', value: 4200.00, tickSize: 0.0001, tickValue: 0.42 }
-            }
-        },
-        'Metals Futures': {
-            'MGC': { 
-                name: 'Gold', 
-                Mini: null,
-                Micro: { name: 'Micro Gold (MGC)', value: 10.00, tickSize: 0.10, tickValue: 1.00 }
-            },
-            'SIL': { 
-                name: 'Silver', 
-                Mini: null,
-                Micro: { name: 'Micro Silver (SIL)', value: 1000.00, tickSize: 0.005, tickValue: 5.00 }
-            },
-            'MHG': { 
-                name: 'Copper', 
-                Mini: null,
-                Micro: { name: 'Micro Copper (MHG)', value: 5000.00, tickSize: 0.0005, tickValue: 2.50 }
-            }
-        },
-        'Cryptocurrency Futures': {
-            'MBT': { 
-                name: 'Bitcoin', 
-                Mini: null,
-                Micro: { name: 'Micro Bitcoin (MBT)', value: 5.00, tickSize: 5.00, tickValue: 25.00 }
-            },
-            'MET': { 
-                name: 'Ether', 
-                Mini: null,
-                Micro: { name: 'Micro Ether (MET)', value: 1.00, tickSize: 0.25, tickValue: 0.25 }
-            },
-            'MSL': { 
-                name: 'Solana', 
-                Mini: null,
-                Micro: { name: 'Micro Solana (MSL)', value: 1.00, tickSize: 0.01, tickValue: 0.01 }
-            },
-            'MXP': { 
-                name: 'XRP', 
-                Mini: null,
-                Micro: { name: 'Micro XRP (MXP)', value: 1.00, tickSize: 0.0001, tickValue: 0.01 }
-            }
-        },
-        'Currency/FX Futures': {
-            'M6E': { 
-                name: 'Euro/US Dollar', 
-                Mini: null,
-                Micro: { name: 'Micro EUR/USD (M6E)', value: 62500.00, tickSize: 0.00005, tickValue: 3.125 }
-            },
-            'M6A': { 
-                name: 'Australian Dollar/US Dollar', 
-                Mini: null,
-                Micro: { name: 'Micro AUD/USD (M6A)', value: 50000.00, tickSize: 0.0001, tickValue: 5.00 }
-            },
-            'M6B': { 
-                name: 'British Pound/US Dollar', 
-                Mini: null,
-                Micro: { name: 'Micro GBP/USD (M6B)', value: 31250.00, tickSize: 0.0001, tickValue: 3.125 }
-            },
-            'MSF': { 
-                name: 'Swiss Franc/US Dollar', 
-                Mini: null,
-                Micro: { name: 'Micro CHF/USD (MSF)', value: 62500.00, tickSize: 0.0001, tickValue: 6.25 }
-            },
-            'MCD': { 
-                name: 'Canadian Dollar/US Dollar', 
-                Mini: null,
-                Micro: { name: 'Micro CAD/USD (MCD)', value: 50000.00, tickSize: 0.00005, tickValue: 2.50 }
-            }
-        },
-        'Agricultural Futures': {
-            'MZC': { 
-                name: 'Corn', 
-                Mini: null,
-                Micro: { name: 'Micro Corn (MZC)', value: 10.00, tickSize: 0.25, tickValue: 2.50 }
-            },
-            'MZS': { 
-                name: 'Soybeans', 
-                Mini: null,
-                Micro: { name: 'Micro Soybeans (MZS)', value: 10.00, tickSize: 0.25, tickValue: 2.50 }
-            },
-            'MZW': { 
-                name: 'Wheat', 
-                Mini: null,
-                Micro: { name: 'Micro Wheat (MZW)', value: 10.00, tickSize: 0.25, tickValue: 2.50 }
-            },
-            'MZL': { 
-                name: 'Soybean Oil', 
-                Mini: null,
-                Micro: { name: 'Micro Soybean Oil (MZL)', value: 100.00, tickSize: 0.01, tickValue: 1.00 }
-            },
-            'MZM': { 
-                name: 'Soybean Meal', 
-                Mini: null,
-                Micro: { name: 'Micro Soybean Meal (MZM)', value: 10.00, tickSize: 0.10, tickValue: 1.00 }
-            }
-        },
-        'Interest Rate Futures': {
-            '10Y': { 
-                name: '10-Year U.S. Treasury Note', 
-                Mini: null,
-                Micro: { name: 'Micro 10-Year Yield (10Y)', value: 1000.00, tickSize: 0.005, tickValue: 5.00 }
-            },
-            'MTN': { 
-                name: 'Ultra 10-Year U.S. T-Note', 
-                Mini: null,
-                Micro: { name: 'Micro Ultra 10-Year U.S. T-Note (MTN)', value: 100.00, tickSize: 0.015625, tickValue: 1.5625 }
-            },
-            'MWN': { 
-                name: 'Ultra U.S. Treasury Bond', 
-                Mini: null,
-                Micro: { name: 'Micro Ultra U.S. Treasury Bond (MWN)', value: 100.00, tickSize: 0.03125, tickValue: 3.125 }
-            }
-        }
+        'Equity Index Futures': [
+            'ESH4 - E-mini S&P 50C',
+            'NQH4 - E-mini Nasdaq-100',
+            'YMH4 - E-mini Dow Jones',
+            'RTYH4 - E-mini Russell 2000'
+        ],
+        'Energy Futures': [
+            'CLJ4 - Crude Oil',
+            'NGJ4 - Natural Gas'
+        ],
+        'Metals Futures': [
+            'GCJ4 - Gold',
+            'SIJ4 - Silver',
+            'HGJ4 - Copper'
+        ],
+        'Cryptocurrency Futures': [
+            'BTC - Bitcoin',
+            'ETH - Ethereum'
+        ],
+        'Currency/FX Futures': [
+            '6EM4 - Euro FX',
+            '6BM4 - British Pound',
+            '6JM4 - Japanese Yen'
+        ],
+        'Agricultural Futures': [
+            'ZCK4 - Corn',
+            'ZSK4 - Soybeans',
+            'ZWK4 - Wheat'
+        ],
+        'Interest Rate Futures': [
+            'ZNM4 - 10-Year T-Note',
+            'ZBM4 - 30-Year T-Bond'
+        ]
     };
 
-    // --- State Variables ---
-    let tradeHistory = JSON.parse(localStorage.getItem('futuresTradeHistory')) || [];
-    let currentContractSpec = CONTRACTS_DATA['Equity Index Futures']['NQ']['Mini']; // Default to E-mini Nasdaq 100
-    let exitMode = 'planned'; // 'planned' or 'actual'
+    // Calendar functionality
+    let currentDate = new Date(2025, 10, 20); // Set to November 2025
+    let selectedDayForTrade = null;
+    let tradeToDelete = null;
 
-    // --- Utility Functions ---
+    // Initialize the calculator when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCalculator();
+        setupEventListeners();
+        loadTradeHistory();
+        calculateGoal();
+        setupCalendarNavigation();
+        generateCalendar();
+        setupModal();
+        
+        // Set today's date as default for trade log
+        const today = "2025-11-20"; // Fixed to November 20, 2025
+        document.getElementById('trade-open-date').value = today;
+        document.getElementById('trade-exit-date').value = today;
+        
+        // Initialize notes character counter
+        updateNotesCounter();
+        
+        // Load sample data for current month
+        loadSampleData();
+    });
 
-    /**
-     * Toggles dark mode based on the current body class.
-     */
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark-mode');
-        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
+    function initializeCalculator() {
+        // Set up dark mode toggle
+        setupDarkModeToggle();
+        
+        // Set up tab navigation
+        setupTabNavigation();
+        
+        // Populate the asset class dropdown
+        populateAssetClassSelect();
     }
 
-    /**
-     * Formats a number as a currency string.
-     * @param {number} amount - The numeric amount.
-     * @returns {string} The formatted currency string.
-     */
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
+    function setupEventListeners() {
+        // Add event listeners to all inputs for real-time calculation
+        const inputs = [
+            'account-capital', 
+            'risk-percentage', 
+            'goal-profit', 
+            'win-rate', 
+            'risk-reward'
+        ];
+        
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                updateStrategy();
+                // Only calculate full goal if we have all inputs
+                if (inputs.every(inputId => document.getElementById(inputId).value)) {
+                    calculateGoal();
+                }
+            });
+        });
+        
+        // Add event listener for asset class change
+        document.getElementById('asset-class-select').addEventListener('change', function() {
+            updateSymbolSizeSelect();
+        });
+        
+        // Add event listeners for PnL calculation
+        document.getElementById('trade-entry').addEventListener('input', calculatePnL);
+        document.getElementById('trade-exit').addEventListener('input', calculatePnL);
+        document.getElementById('trade-contracts').addEventListener('input', calculatePnL);
+        document.getElementById('trade-commission').addEventListener('input', calculatePnL);
+        
+        // Add event listener for notes character counter
+        document.getElementById('trade-notes').addEventListener('input', updateNotesCounter);
+        
+        // Initialize strategy
+        updateStrategy();
     }
 
-    /**
-     * Reads all necessary trade inputs.
-     * @returns {object|null} Trade parameters or null if validation fails.
-     */
-    function getTradeInputs() {
-        // Use the currently selected contract specification
-        const category = document.getElementById('category-select').value;
-        const contract = document.getElementById('contract-select').value;
-        const size = document.querySelector('.contract-size-btn.active').dataset.size;
+    // Update notes character counter
+    function updateNotesCounter() {
+        const notesTextarea = document.getElementById('trade-notes');
+        const counter = document.getElementById('notes-counter');
+        const maxLength = 100;
+        const currentLength = notesTextarea.value.length;
+        const remaining = maxLength - currentLength;
         
-        const contracts = parseFloat(document.getElementById('contracts').value);
-        const direction = document.getElementById('trade-direction').value;
-        const entry = parseFloat(document.getElementById('entry-price').value);
-        const commission = parseFloat(document.getElementById('commission').value);
-
-        // Get exit parameters based on mode
-        let tp, sl, exitPrice;
+        counter.textContent = `${remaining}/${maxLength}`;
         
-        if (exitMode === 'planned') {
-            tp = parseFloat(document.getElementById('take-profit').value);
-            sl = parseFloat(document.getElementById('stop-loss').value);
-            exitPrice = null;
-        } else {
-            tp = null;
-            sl = null;
-            exitPrice = parseFloat(document.getElementById('exit-price').value);
+        // Update counter color based on remaining characters
+        counter.classList.remove('warning', 'error');
+        if (remaining <= 10) {
+            counter.classList.add('error');
+        } else if (remaining <= 30) {
+            counter.classList.add('warning');
         }
-
-        if (isNaN(contracts) || contracts <= 0 || isNaN(entry) || isNaN(commission) || commission < 0) {
-            return null;
-        }
-
-        // Validate exit parameters based on mode
-        if (exitMode === 'planned' && (isNaN(tp) || isNaN(sl))) {
-            return null;
-        }
-        
-        if (exitMode === 'actual' && isNaN(exitPrice)) {
-            return null;
-        }
-
-        return { category, contract, size, contracts, direction, entry, tp, sl, commission, exitPrice };
     }
 
-    // --- Contract Selection Logic ---
-
-    /**
-     * Populates the category dropdown.
-     */
-    function populateCategorySelect() {
-        const categorySelect = document.getElementById('category-select');
-        categorySelect.innerHTML = '';
+    // Populate asset class dropdown - MATCHING THE IMAGE EXACTLY
+    function populateAssetClassSelect() {
+        const assetClassSelect = document.getElementById('asset-class-select');
         
-        for (const category in CONTRACTS_DATA) {
+        // Clear existing options
+        assetClassSelect.innerHTML = '';
+        
+        // Add asset classes from CONTRACTS_DATA in exact order from image
+        Object.keys(CONTRACTS_DATA).forEach(assetClass => {
             const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categorySelect.appendChild(option);
-        }
+            option.value = assetClass;
+            option.textContent = assetClass;
+            assetClassSelect.appendChild(option);
+        });
+        
+        // Set default selection to match image
+        assetClassSelect.selectedIndex = 0;
+        
+        // Update symbol/size dropdown based on default asset class
+        updateSymbolSizeSelect();
     }
 
-    /**
-     * Updates the contract dropdown based on selected category and size.
-     */
-    function updateContractSelect() {
-        const categorySelect = document.getElementById('category-select');
-        const contractSelect = document.getElementById('contract-select');
-        const size = document.querySelector('.contract-size-btn.active').dataset.size;
-        const currentCategory = categorySelect.value;
-
-        // Clear existing contract options
-        contractSelect.innerHTML = '';
+    // Update symbol/size dropdown based on selected asset class - MATCHING THE IMAGE EXACTLY
+    function updateSymbolSizeSelect() {
+        const assetClass = document.getElementById('asset-class-select').value;
+        const symbolSizeSelect = document.getElementById('symbol-size-select');
         
-        if (!CONTRACTS_DATA[currentCategory]) return;
-
-        // Populate contract options based on available contracts for the selected size
-        let hasContracts = false;
-        for (const symbol in CONTRACTS_DATA[currentCategory]) {
-            const contract = CONTRACTS_DATA[currentCategory][symbol];
-            if (contract[size]) {
+        // Clear existing options
+        symbolSizeSelect.innerHTML = '';
+        
+        // Add contracts for the selected asset class in exact order from image
+        if (CONTRACTS_DATA[assetClass]) {
+            CONTRACTS_DATA[assetClass].forEach(symbol => {
                 const option = document.createElement('option');
                 option.value = symbol;
-                option.textContent = contract[size].name;
-                contractSelect.appendChild(option);
-                hasContracts = true;
-            }
+                option.textContent = symbol;
+                symbolSizeSelect.appendChild(option);
+            });
         }
-
-        // If no contracts available for this size, show message and disable
-        if (!hasContracts) {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = `No ${size} contracts available`;
-            option.disabled = true;
-            contractSelect.appendChild(option);
+        
+        // Set default selection to match image
+        if (symbolSizeSelect.options.length > 0) {
+            symbolSizeSelect.selectedIndex = 0;
         }
     }
 
-    /**
-     * Updates the global contract spec based on user selection.
-     */
-    function updateContractSpecs() {
-        const category = document.getElementById('category-select').value;
-        const symbol = document.getElementById('contract-select').value;
-        const size = document.querySelector('.contract-size-btn.active').dataset.size;
+    // Calculate PnL based on entry, exit, contracts and commission
+    function calculatePnL() {
+        const entry = parseFloat(document.getElementById('trade-entry').value) || 0;
+        const exit = parseFloat(document.getElementById('trade-exit').value) || 0;
+        const contracts = parseInt(document.getElementById('trade-contracts').value) || 0;
+        const commission = parseFloat(document.getElementById('trade-commission').value) || 0;
+        const direction = document.getElementById('trade-direction').value;
         
-        const contractData = CONTRACTS_DATA[category]?.[symbol];
-
-        if (contractData && contractData[size]) {
-            currentContractSpec = contractData[size];
-            // Update step value for price inputs to match the tick size
-            const tickSize = currentContractSpec.tickSize;
-            document.getElementById('entry-price').step = tickSize;
-            document.getElementById('take-profit').step = tickSize;
-            document.getElementById('stop-loss').step = tickSize;
-            document.getElementById('exit-price').step = tickSize;
-
-            // Update the point value display
-            updatePointValueDisplay();
-
-            // Trigger calculation on spec change
-            calculateTrade();
+        let pnl = 0;
+        if (direction === 'Long/Buy') {
+            pnl = (exit - entry) * 20 * contracts; // Using standard contract value of $20 per point
         } else {
-            console.error("Invalid contract selection combination.");
-            currentContractSpec = null;
-        }
-    }
-
-    /**
-     * Updates the point value display in the UI.
-     */
-    function updatePointValueDisplay() {
-        if (!currentContractSpec) return;
-        
-        const displayElement = document.getElementById('point-value-display');
-        const contractName = currentContractSpec.name.split('(')[1]?.replace(')', '') || 'Contract';
-        displayElement.textContent = `${formatCurrency(currentContractSpec.value)} / ${formatCurrency(currentContractSpec.tickValue)} (${contractName})`;
-    }
-
-    /**
-     * Checks if Mini contracts are available for the current category and updates UI accordingly.
-     */
-    function checkMiniAvailability() {
-        const category = document.getElementById('category-select').value;
-        const miniBtn = document.getElementById('mini-btn');
-        const noMiniMessage = document.getElementById('no-mini-message');
-        
-        let hasMiniContracts = false;
-        for (const symbol in CONTRACTS_DATA[category]) {
-            if (CONTRACTS_DATA[category][symbol].Mini) {
-                hasMiniContracts = true;
-                break;
-            }
+            pnl = (entry - exit) * 20 * contracts;
         }
         
-        if (!hasMiniContracts) {
-            miniBtn.disabled = true;
-            noMiniMessage.classList.remove('hidden');
-            
-            // If Mini is currently active but not available, switch to Micro
-            if (miniBtn.classList.contains('active')) {
-                miniBtn.classList.remove('active');
-                document.getElementById('micro-btn').classList.add('active');
-                updateContractSelect();
-                updateContractSpecs();
-            }
-        } else {
-            miniBtn.disabled = false;
-            noMiniMessage.classList.add('hidden');
-        }
+        // Subtract commission
+        pnl -= commission;
+        
+        // Calculate PnL percentage (assuming $1,200 account for your strategy)
+        const accountSize = 1200;
+        const pnlPercent = (pnl / accountSize) * 100;
+        
+        // Update PnL fields
+        document.getElementById('trade-pnl').value = pnl.toFixed(2);
+        document.getElementById('trade-pnl-percent').value = pnlPercent.toFixed(2);
+        
+        // Update status based on PnL
+        document.getElementById('trade-status').value = pnl >= 0 ? 'Win' : 'Loss';
     }
 
-    // --- Exit Mode Toggle Logic ---
-
-    /**
-     * Toggles between planned trade (TP/SL) and actual exit modes.
-     */
-    function toggleExitMode(mode) {
-        exitMode = mode;
+    function setupTabNavigation() {
+        const tabButtons = document.querySelectorAll('.tab-button');
         
-        // Update UI to reflect the active mode
-        document.querySelectorAll('.exit-mode-btn').forEach(btn => {
-            btn.classList.remove('active');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Update active tab button
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update active tab content
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.add('active');
+                
+                // Refresh trade log if we're switching to that tab
+                if (tabId === 'add-trade-tab') {
+                    loadTradeHistory();
+                }
+            });
         });
-        document.querySelector(`.exit-mode-btn[data-mode="${mode}"]`).classList.add('active');
-        
-        // Show/hide appropriate inputs
-        if (mode === 'planned') {
-            document.getElementById('planned-exit-inputs').style.display = 'block';
-            document.getElementById('actual-exit-inputs').style.display = 'none';
-        } else {
-            document.getElementById('planned-exit-inputs').style.display = 'none';
-            document.getElementById('actual-exit-inputs').style.display = 'block';
-        }
-        
-        // Recalculate
-        calculateTrade();
     }
 
-    // --- Core Calculation Logic ---
-
-    /**
-     * Calculates the potential PnL and R:R ratio for the futures trade.
-     */
-    function calculateTrade() {
-        const inputs = getTradeInputs();
-        const resultsSection = document.getElementById('results-section');
-        const logButton = document.getElementById('log-trade-btn');
-
-        if (!inputs || !currentContractSpec) {
-            resultsSection.style.display = 'none';
-            logButton.disabled = true;
-            return;
-        }
-
-        resultsSection.style.display = 'block';
-
-        const { contracts, direction, entry, tp, sl, commission, exitPrice } = inputs;
-        const spec = currentContractSpec;
-
-        // Show/hide appropriate results based on mode
-        if (exitMode === 'planned') {
-            document.getElementById('planned-results').style.display = 'grid';
-            document.getElementById('actual-results').style.display = 'none';
-        } else {
-            document.getElementById('planned-results').style.display = 'none';
-            document.getElementById('actual-results').style.display = 'grid';
-        }
-
-        // 1. Calculate Point Differentials
-        let profitPoints, lossPoints, actualPnLPoints;
+    function setupDarkModeToggle() {
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const icon = darkModeToggle.querySelector('i');
         
-        if (exitMode === 'planned') {
-            if (direction === 'Long') {
-                profitPoints = tp - entry;
-                lossPoints = entry - sl;
-            } else { // Short
-                profitPoints = entry - tp;
-                lossPoints = sl - entry;
-            }
-
-            // Check for invalid setups (TP/SL on wrong side)
-            if (profitPoints < 0 || lossPoints < 0) {
-                document.getElementById('profit-value').textContent = formatCurrency(0);
-                document.getElementById('loss-value').textContent = formatCurrency(0);
-                document.getElementById('rr-ratio-value').textContent = "0.0:1";
-                document.getElementById('log-trade-btn').disabled = true;
-                return;
-            }
-
-            // 2. Calculate Gross PnL
-            const grossProfit = profitPoints * spec.value * contracts;
-            const grossLoss = lossPoints * spec.value * contracts;
-
-            // 3. Calculate Total Commission (In and Out)
-            const totalCommission = commission * 2 * contracts;
-
-            // 4. Calculate Net PnL
-            const netProfit = grossProfit - totalCommission;
-            const netLoss = grossLoss + totalCommission;
-
-            // 5. Calculate R:R Ratio
-            const riskRewardRatio = netLoss > 0 ? (netProfit / netLoss).toFixed(2) : (netProfit > 0 ? "∞" : "0.00");
-            const rrDisplay = riskRewardRatio !== "∞" ? `${riskRewardRatio}:1` : "∞:1";
-
-            // 6. Calculate Ticks
-            const profitTicks = Math.round(profitPoints / spec.tickSize);
-            const lossTicks = Math.round(lossPoints / spec.tickSize);
-
-            // 7. Update UI
-            document.getElementById('profit-value').textContent = formatCurrency(netProfit);
-            document.getElementById('loss-value').textContent = formatCurrency(netLoss);
-            document.getElementById('rr-ratio-value').textContent = rrDisplay;
-            document.getElementById('commission-total-value').textContent = formatCurrency(totalCommission);
+        darkModeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
             
-            document.getElementById('profit-points-value').textContent = `${profitPoints.toFixed(2)} / ${profitTicks}`;
-            document.getElementById('loss-points-value').textContent = `${lossPoints.toFixed(2)} / ${lossTicks}`;
-        } else {
-            // Actual exit mode
-            if (direction === 'Long') {
-                actualPnLPoints = exitPrice - entry;
-            } else { // Short
-                actualPnLPoints = entry - exitPrice;
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
             }
-
-            // Calculate Gross PnL
-            const grossPnL = actualPnLPoints * spec.value * contracts;
-
-            // Calculate Total Commission (In and Out)
-            const totalCommission = commission * 2 * contracts;
-
-            // Calculate Net PnL
-            const netPnL = grossPnL - totalCommission;
-
-            // Calculate Ticks
-            const actualTicks = Math.round(Math.abs(actualPnLPoints) / spec.tickSize);
-
-            // Update UI
-            const pnlElement = document.getElementById('actual-pnl-value');
-            pnlElement.textContent = formatCurrency(netPnL);
-            pnlElement.className = 'result-value ' + (netPnL >= 0 ? 'profit' : 'loss');
             
-            document.getElementById('actual-commission-value').textContent = formatCurrency(totalCommission);
-            
-            // Update points display for actual exit
-            document.getElementById('profit-points-value').textContent = `${actualPnLPoints >= 0 ? actualPnLPoints.toFixed(2) : '0.00'} / ${actualPnLPoints >= 0 ? actualTicks : '0'}`;
-            document.getElementById('loss-points-value').textContent = `${actualPnLPoints < 0 ? Math.abs(actualPnLPoints).toFixed(2) : '0.00'} / ${actualPnLPoints < 0 ? actualTicks : '0'}`;
+            // Save preference to localStorage
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+        
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
         }
-
-        // Update the point value display
-        document.getElementById('point-value-display').textContent = `${formatCurrency(spec.value)} / ${formatCurrency(spec.tickValue)} (${spec.name.split('(')[1]?.replace(')', '') || 'Contract'})`;
-
-        // Re-enable log button
-        logButton.disabled = false;
     }
 
-    // --- Trade Logging Functions ---
+    function updateStrategy() {
+        // Get input values
+        const accountCapital = parseFloat(document.getElementById('account-capital').value) || 0;
+        const riskPercentage = parseFloat(document.getElementById('risk-percentage').value) || 0;
+        const riskReward = parseFloat(document.getElementById('risk-reward').value) || 0;
+        const winRate = parseFloat(document.getElementById('win-rate').value) || 0;
+        
+        // Calculate risk per trade
+        const riskPerTrade = accountCapital * (riskPercentage / 100);
+        document.getElementById('risk-per-trade').textContent = `$${riskPerTrade.toFixed(2)}`;
+        
+        // Calculate reward per trade
+        const rewardPerTrade = riskPerTrade * riskReward;
+        document.getElementById('reward-per-trade').textContent = `$${rewardPerTrade.toFixed(2)}`;
+        
+        // Calculate expected value per trade
+        const winProbability = winRate / 100;
+        const lossProbability = 1 - winProbability;
+        const expectedValue = (winProbability * rewardPerTrade) - (lossProbability * riskPerTrade);
+        document.getElementById('expected-value').textContent = `$${expectedValue.toFixed(2)}`;
+    }
 
-    /**
-     * Logs the current trade setup to the history array.
-     */
+    function calculateGoal() {
+        // Get input values
+        const accountCapital = parseFloat(document.getElementById('account-capital').value) || 0;
+        const riskPercentage = parseFloat(document.getElementById('risk-percentage').value) || 0;
+        const goalProfit = parseFloat(document.getElementById('goal-profit').value) || 0;
+        const winRate = parseFloat(document.getElementById('win-rate').value) || 0;
+        const riskReward = parseFloat(document.getElementById('risk-reward').value) || 0;
+        
+        // Calculate risk per trade
+        const riskPerTrade = accountCapital * (riskPercentage / 100);
+        
+        // Calculate reward per trade
+        const rewardPerTrade = riskPerTrade * riskReward;
+        
+        // Calculate expected value per trade
+        const winProbability = winRate / 100;
+        const lossProbability = 1 - winProbability;
+        const expectedValue = (winProbability * rewardPerTrade) - (lossProbability * riskPerTrade);
+        
+        // Calculate number of trades needed to reach goal
+        let tradesNeeded = 0;
+        if (expectedValue > 0) {
+            tradesNeeded = Math.ceil(goalProfit / expectedValue);
+        } else {
+            tradesNeeded = 999; // If expected value is negative, goal is unrealistic
+        }
+        
+        // Calculate winning and losing trades
+        const winningTrades = Math.ceil(tradesNeeded * winProbability);
+        const losingTrades = tradesNeeded - winningTrades;
+        
+        // Calculate total risk capital
+        const totalRisk = losingTrades * riskPerTrade;
+        
+        // Calculate account after reaching goal
+        const accountAfterGoal = accountCapital + goalProfit;
+        
+        // Estimate time (assuming 8 trades per day for your strategy)
+        const timeDays = Math.ceil(tradesNeeded / 8);
+        const dailyProfit = goalProfit / timeDays;
+        
+        // Update UI with results
+        document.getElementById('trades-needed').textContent = tradesNeeded;
+        document.getElementById('winning-trades').textContent = winningTrades;
+        document.getElementById('losing-trades').textContent = losingTrades;
+        document.getElementById('time-days').textContent = timeDays;
+        document.getElementById('total-risk').textContent = `$${totalRisk.toFixed(2)}`;
+        document.getElementById('account-after-goal').textContent = `$${accountAfterGoal.toFixed(2)}`;
+        document.getElementById('daily-profit').textContent = `$${dailyProfit.toFixed(2)}`;
+        
+        // Update progress bar
+        const progressPercent = Math.min(100, (accountCapital / (accountCapital + goalProfit)) * 100);
+        document.getElementById('progress-percent').textContent = `${progressPercent.toFixed(1)}%`;
+        document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+    }
+
+    // NEW: Show trade preview function
+    function showTradePreview(trade) {
+        // Remove any existing preview
+        const existingPreview = document.querySelector('.trade-preview');
+        if (existingPreview) {
+            existingPreview.remove();
+        }
+        
+        // Create preview element
+        const preview = document.createElement('div');
+        preview.className = 'trade-preview';
+        
+        // Format the PnL with proper sign
+        const pnlFormatted = trade.pnl >= 0 ? `+$${Math.abs(trade.pnl).toFixed(2)}` : `-$${Math.abs(trade.pnl).toFixed(2)}`;
+        
+        // Create preview content
+        preview.innerHTML = `
+            <div class="trade-preview-title">Trade Preview</div>
+            <div class="trade-preview-content">
+                <div class="trade-preview-item">
+                    <div class="trade-preview-label">Symbol</div>
+                    <div class="trade-preview-value">${trade.symbolSize.split(' - ')[0]}</div>
+                </div>
+                <div class="trade-preview-item">
+                    <div class="trade-preview-label">Direction</div>
+                    <div class="trade-preview-value">${trade.direction}</div>
+                </div>
+                <div class="trade-preview-item">
+                    <div class="trade-preview-label">Contracts</div>
+                    <div class="trade-preview-value">${trade.contracts}</div>
+                </div>
+                <div class="trade-preview-item">
+                    <div class="trade-preview-label">Status</div>
+                    <div class="trade-preview-value">${trade.status}</div>
+                </div>
+            </div>
+            <div class="trade-preview-pnl ${trade.pnl >= 0 ? 'positive' : 'negative'}">${pnlFormatted}</div>
+            <div class="trade-preview-success">Trade successfully saved!</div>
+            <div style="font-size: 14px; color: var(--gray); margin-top: 10px;">This preview will disappear shortly</div>
+        `;
+        
+        // Add to the body
+        document.body.appendChild(preview);
+        
+        // Remove preview after animation completes
+        setTimeout(() => {
+            if (preview.parentNode) {
+                preview.parentNode.removeChild(preview);
+            }
+        }, 3000);
+    }
+
     function logTrade() {
-        calculateTrade();
-        const inputs = getTradeInputs();
-        if (!inputs || document.getElementById('log-trade-btn').disabled) return;
-
-        const { category, contract, size, contracts, direction, entry, tp, sl, commission, exitPrice } = inputs;
-        const spec = currentContractSpec;
-
-        let netPnL, netLoss, profitPoints, lossPoints;
+        // Get trade data from form
+        const assetClass = document.getElementById('asset-class-select').value;
+        const symbolSize = document.getElementById('symbol-size-select').value;
+        const openDate = document.getElementById('trade-open-date').value;
+        const exitDate = document.getElementById('trade-exit-date').value;
+        const entry = parseFloat(document.getElementById('trade-entry').value);
+        const exit = parseFloat(document.getElementById('trade-exit').value);
+        const direction = document.getElementById('trade-direction').value;
+        const strategy = document.getElementById('trade-strategy').value;
+        const timeFrame = document.getElementById('time-frame').value;
+        const stopLoss = parseFloat(document.getElementById('trade-stop-loss').value);
+        const status = document.getElementById('trade-status').value;
+        const rr = document.getElementById('trade-rr').value;
+        const contracts = parseInt(document.getElementById('trade-contracts').value);
+        const commission = parseFloat(document.getElementById('trade-commission').value);
+        const pnl = parseFloat(document.getElementById('trade-pnl').value);
+        const pnlPercent = parseFloat(document.getElementById('trade-pnl-percent').value);
+        const notes = document.getElementById('trade-notes').value;
         
-        if (exitMode === 'planned') {
-            if (direction === 'Long') {
-                profitPoints = tp - entry;
-                lossPoints = entry - sl;
-            } else {
-                profitPoints = entry - tp;
-                lossPoints = sl - entry;
-            }
-            
-            const totalCommission = commission * 2 * contracts;
-            const grossProfit = profitPoints * spec.value * contracts;
-            const grossLoss = lossPoints * spec.value * contracts;
-            netPnL = grossProfit - totalCommission;
-            netLoss = grossLoss + totalCommission;
-        } else {
-            // Actual exit mode
-            if (direction === 'Long') {
-                profitPoints = exitPrice - entry;
-            } else {
-                profitPoints = entry - exitPrice;
-            }
-            
-            const totalCommission = commission * 2 * contracts;
-            const grossPnL = profitPoints * spec.value * contracts;
-            netPnL = grossPnL - totalCommission;
-            netLoss = netPnL < 0 ? Math.abs(netPnL) : 0;
-        }
-
-        // Log the trade setup
-        const tradeEntry = {
+        // Create trade object
+        const trade = {
             id: Date.now(),
-            category: category,
-            contract: contract,
-            size: size,
-            contracts: contracts,
-            direction: direction,
-            entry: entry.toFixed(2),
-            tp: tp ? tp.toFixed(2) : null,
-            sl: sl ? sl.toFixed(2) : null,
-            exitPrice: exitPrice ? exitPrice.toFixed(2) : null,
-            netPnL: netPnL,
-            netLoss: netLoss,
-            commission: commission,
-            instrumentName: spec.name,
-            exitMode: exitMode
+            assetClass,
+            symbolSize,
+            openDate,
+            exitDate,
+            entry,
+            exit,
+            direction,
+            strategy,
+            timeFrame,
+            stopLoss,
+            status,
+            rr,
+            contracts,
+            commission,
+            pnl,
+            pnlPercent,
+            notes,
+            timestamp: new Date().toISOString()
         };
         
-        tradeHistory.push(tradeEntry);
-        localStorage.setItem('futuresTradeHistory', JSON.stringify(tradeHistory));
-        renderTradeHistory();
-
-        // Switch to log tab and clear results
-        switchTab('trade-log-tab');
-        document.getElementById('results-section').style.display = 'none';
-        document.getElementById('log-trade-btn').disabled = true;
+        // Show trade preview
+        showTradePreview(trade);
+        
+        // Save to localStorage
+        let trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
+        trades.push(trade);
+        localStorage.setItem('futuresTrades', JSON.stringify(trades));
+        
+        // Refresh trade list and calendar
+        loadTradeHistory();
+        generateCalendar();
+        
+        // Clear form notes
+        document.getElementById('trade-notes').value = '';
+        updateNotesCounter();
     }
 
-    /**
-     * Renders the trade history list and updates the log summary.
-     */
-    function renderTradeHistory() {
-        const list = document.getElementById('trade-history-list');
-        list.innerHTML = '';
+    function loadTradeHistory() {
+        const tradeList = document.getElementById('trade-history-list');
+        const noTradesMessage = document.getElementById('no-trades-message');
         
-        if (tradeHistory.length === 0) {
-            document.getElementById('no-trades-message').style.display = 'block';
-        } else {
-            document.getElementById('no-trades-message').style.display = 'none';
+        // Get trades from localStorage
+        const trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
+        
+        // Clear existing list
+        tradeList.innerHTML = '';
+        
+        if (trades.length === 0) {
+            noTradesMessage.style.display = 'block';
+            return;
         }
         
-        tradeHistory.forEach((trade) => {
-            const pnlDisplayAmount = trade.netPnL;
-            const pnlClass = pnlDisplayAmount >= 0 ? 'positive' : 'negative';
-            const tradeType = pnlDisplayAmount >= 0 ? 'Win' : 'Loss';
-            
-            // Calculate risk:reward ratio for planned trades
-            let riskRewardRatio = "N/A";
-            if (trade.exitMode === 'planned' && trade.netLoss > 0) {
-                riskRewardRatio = (trade.netPnL / trade.netLoss).toFixed(2);
-                riskRewardRatio = `${riskRewardRatio}:1`;
-            }
-
+        noTradesMessage.style.display = 'none';
+        
+        // Add trades to list (most recent first)
+        trades.reverse().forEach((trade, index) => {
             const listItem = document.createElement('li');
-            listItem.classList.add('trade-item');
-            listItem.innerHTML = `
-                <div class="trade-type ${tradeType}">${trade.direction.substring(0, 1)}</div>
-                <div class="trade-details">
-                    <div class="trade-amount ${pnlClass}">
-                        ${trade.instrumentName} - ${formatCurrency(pnlDisplayAmount)} (${tradeType})
-                    </div>
-                    <div class="trade-info">
-                        ${trade.contracts} ${trade.size} Contract(s) | Entry: ${trade.entry} | 
-                        ${trade.exitMode === 'planned' ? 
-                          `TP: ${trade.tp} | SL: ${trade.sl} | Risk: ${formatCurrency(trade.netLoss)} | R:R: ${riskRewardRatio}` : 
-                          `Exit: ${trade.exitPrice}`}
-                    </div>
-                </div>
-                <button class="action-btn delete" onclick="deleteTrade(${trade.id})" aria-label="Delete Trade">
-                    <i class="fas fa-trash-can"></i>
-                </button>
-            `;
-            list.appendChild(listItem);
+            listItem.className = 'trade-item';
+            
+            const tradeType = document.createElement('div');
+            tradeType.className = `trade-type ${trade.status === 'Win' ? 'Win' : 'Loss'}`;
+            tradeType.textContent = trade.status === 'Win' ? 'W' : 'L';
+            
+            const tradeDetails = document.createElement('div');
+            tradeDetails.className = 'trade-details';
+            
+            const tradeAmount = document.createElement('div');
+            tradeAmount.className = 'trade-amount';
+            tradeAmount.textContent = `$${Math.abs(trade.pnl).toFixed(2)} ${trade.pnl >= 0 ? 'Profit' : 'Loss'}`;
+            tradeAmount.classList.add(trade.pnl >= 0 ? 'positive' : 'negative');
+            
+            const tradeInfo = document.createElement('div');
+            tradeInfo.className = 'trade-info';
+            tradeInfo.textContent = `${trade.symbolSize} ${trade.direction} • ${trade.timeFrame} • ${trade.strategy} • ${trade.openDate}`;
+            
+            tradeDetails.appendChild(tradeAmount);
+            tradeDetails.appendChild(tradeInfo);
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'action-btn delete';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.addEventListener('click', function() {
+                deleteTrade(trades.length - 1 - index); // Reverse index since we reversed the array
+            });
+            
+            listItem.appendChild(tradeType);
+            listItem.appendChild(tradeDetails);
+            listItem.appendChild(deleteBtn);
+            
+            tradeList.appendChild(listItem);
         });
-
-        updateLogSummary();
-    }
-    
-    /**
-     * Deletes a trade entry from the log by ID.
-     * @param {number} id - The unique ID of the trade entry.
-     */
-    function deleteTrade(id) {
-        tradeHistory = tradeHistory.filter(trade => trade.id !== id);
-        localStorage.setItem('futuresTradeHistory', JSON.stringify(tradeHistory));
-        renderTradeHistory();
-    }
-    
-    /**
-     * Clears all entries from the trade log.
-     */
-    function clearTradeLog() {
-        if (confirm('Are you sure you want to clear the entire trade log? This action cannot be undone.')) {
-            tradeHistory = [];
-            localStorage.setItem('futuresTradeHistory', JSON.stringify(tradeHistory));
-            renderTradeHistory();
-        }
-    }
-    
-    /**
-     * Updates the log summary (Total Trades).
-     */
-    function updateLogSummary() {
-        const totalTrades = tradeHistory.length;
-        document.getElementById('total-trades-summary').textContent = totalTrades;
     }
 
-    /**
-     * Handles tab switching logic
-     * @param {string} tabId - The ID of the tab content to show.
-     */
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        document.getElementById(tabId).classList.add('active');
-
-        document.querySelectorAll('.mobile-menu-item').forEach(item => item.classList.remove('active'));
-        document.querySelector(`.mobile-menu-item[data-tab-id="${tabId}"]`).classList.add('active');
-
-        if (tabId === 'trade-log-tab') {
-            renderTradeHistory();
-        }
-    }
-
-    // --- Initialization ---
-
-    /**
-     * Initializes the application by setting up event listeners and populating dropdowns.
-     */
-    function initializeApp() {
-        // Populate category dropdown
-        populateCategorySelect();
+    function deleteTrade(index) {
+        // Get trades from localStorage
+        let trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
         
-        // Set up event listeners
-        document.getElementById('category-select').addEventListener('change', function() {
-            checkMiniAvailability();
-            updateContractSelect();
-            updateContractSpecs();
-        });
+        // Remove trade at index
+        trades.splice(index, 1);
         
-        document.getElementById('contract-select').addEventListener('change', updateContractSpecs);
+        // Save updated trades
+        localStorage.setItem('futuresTrades', JSON.stringify(trades));
         
-        // Contract size toggle buttons
-        document.querySelectorAll('.contract-size-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (this.disabled) return;
+        // Update display
+        loadTradeHistory();
+        generateCalendar();
+    }
+
+    // PDF Generation Functions
+    function previewPDF() {
+        // Use browser's print functionality for preview
+        window.print();
+    }
+
+    function downloadPDF() {
+        // Create a new jsPDF instance
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Get trades from localStorage
+        const trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
+        
+        // Add title
+        doc.setFontSize(20);
+        doc.text('Trading Journal Report', 20, 20);
+        
+        // Add date
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+        
+        // Calculate performance metrics
+        const totalTrades = trades.length;
+        const winningTrades = trades.filter(trade => trade.status === 'Win').length;
+        const losingTrades = trades.filter(trade => trade.status === 'Loss').length;
+        const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+        const totalPnl = trades.reduce((sum, trade) => sum + trade.pnl, 0);
+        
+        // Add performance summary
+        doc.setFontSize(16);
+        doc.text('Performance Summary', 20, 50);
+        
+        doc.setFontSize(12);
+        doc.text(`Total Trades: ${totalTrades}`, 20, 65);
+        doc.text(`Winning Trades: ${winningTrades}`, 20, 75);
+        doc.text(`Losing Trades: ${losingTrades}`, 20, 85);
+        doc.text(`Win Rate: ${winRate.toFixed(1)}%`, 20, 95);
+        doc.text(`Total P&L: $${totalPnl.toFixed(2)}`, 20, 105);
+        
+        // Add trade details table
+        if (trades.length > 0) {
+            doc.setFontSize(16);
+            doc.text('Trade Details', 20, 125);
+            
+            // Table headers
+            doc.setFontSize(10);
+            doc.text('Symbol', 20, 140);
+            doc.text('Date', 50, 140);
+            doc.text('Direction', 80, 140);
+            doc.text('Strategy', 110, 140);
+            doc.text('P&L', 150, 140);
+            
+            // Table rows
+            let yPos = 150;
+            trades.forEach((trade, index) => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    yPos = 20;
+                }
                 
-                document.querySelectorAll('.contract-size-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                updateContractSelect();
-                updateContractSpecs();
+                doc.text(trade.symbolSize, 20, yPos);
+                doc.text(trade.openDate, 50, yPos);
+                doc.text(trade.direction, 80, yPos);
+                doc.text(trade.strategy, 110, yPos);
+                doc.text(`$${trade.pnl.toFixed(2)}`, 150, yPos);
+                
+                yPos += 10;
             });
-        });
-
-        // Exit mode toggle buttons
-        document.querySelectorAll('.exit-mode-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const mode = this.getAttribute('data-mode');
-                toggleExitMode(mode);
-            });
-        });
-
-        // Mobile menu functionality
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('active');
-        });
-
-        // Mobile menu items
-        document.querySelectorAll('.mobile-menu-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab-id');
-                switchTab(tabId);
-                document.getElementById('mobileMenu').classList.remove('active');
-            });
-        });
-
-        // Dark mode toggle
-        document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
-
-        // Input change listeners for real-time calculation
-        ['contracts', 'entry-price', 'take-profit', 'stop-loss', 'commission', 'exit-price'].forEach(id => {
-            document.getElementById(id).addEventListener('input', calculateTrade);
-        });
-
-        document.getElementById('trade-direction').addEventListener('change', calculateTrade);
-
-        // Load saved preferences
-        if (localStorage.getItem('darkMode') === 'enabled') {
-            document.body.classList.add('dark-mode');
         }
-
-        // Load trade history
-        renderTradeHistory();
-
-        // Initial setup
-        checkMiniAvailability();
-        updateContractSelect();
-        updateContractSpecs();
+        
+        // Save the PDF
+        doc.save('trading-journal-report.pdf');
     }
 
-    // Initialize the app when DOM is loaded
-    document.addEventListener('DOMContentLoaded', initializeApp);
+    // Calendar functionality
+    function setupCalendarNavigation() {
+        document.getElementById('prev-month').addEventListener('click', function() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateCalendar();
+        });
+        
+        document.getElementById('next-month').addEventListener('click', function() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateCalendar();
+        });
+    }
+    
+    function generateCalendar() {
+        const calendarDays = document.getElementById('calendar-days');
+        const currentMonthElement = document.getElementById('current-month');
+        
+        // Clear existing calendar
+        calendarDays.innerHTML = '';
+        
+        // Set current month title
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        currentMonthElement.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        
+        // Get first day of month and number of days
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        
+        // Get day of week for first day (0 = Sunday, 6 = Saturday)
+        let startingDay = firstDay.getDay();
+        
+        // Add day headers
+        const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        dayNames.forEach(day => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'calendar-day-header';
+            dayHeader.textContent = day;
+            calendarDays.appendChild(dayHeader);
+        });
+        
+        // Add empty cells for days before the first day of the month
+        // Adjust starting day to match Monday as first day of week
+        let adjustedStartingDay = (startingDay + 6) % 7;
+        for (let i = 0; i < adjustedStartingDay; i++) {
+            const emptyDay = document.createElement('div');
+            emptyDay.className = 'calendar-day other-month';
+            
+            // Calculate the day number for previous month
+            const prevMonthLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+            const dayNumber = prevMonthLastDay - adjustedStartingDay + i + 1;
+            
+            const dayNumElement = document.createElement('div');
+            dayNumElement.className = 'day-number';
+            dayNumElement.textContent = dayNumber;
+            emptyDay.appendChild(dayNumElement);
+            
+            calendarDays.appendChild(emptyDay);
+        }
+        
+        // Add days of the month
+        const today = new Date(2025, 10, 20); // November 20, 2025
+        const trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            
+            // Check if this is today
+            if (today.getDate() === day && 
+                today.getMonth() === currentDate.getMonth() && 
+                today.getFullYear() === currentDate.getFullYear()) {
+                dayElement.classList.add('active');
+            }
+            
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayElement.appendChild(dayNumber);
+            
+            // Calculate PnL for this day
+            const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayTrades = trades.filter(trade => trade.openDate === dateStr);
+            const dayPnL = dayTrades.reduce((sum, trade) => sum + parseFloat(trade.pnl), 0);
+            
+            // Add PnL if there are trades
+            if (dayTrades.length > 0) {
+                const pnlElement = document.createElement('div');
+                pnlElement.className = `day-pnl ${dayPnL >= 0 ? 'positive' : 'negative'}`;
+                pnlElement.textContent = dayPnL >= 0 ? `$${dayPnL.toFixed(2)}` : `-$${Math.abs(dayPnL).toFixed(2)}`;
+                dayElement.appendChild(pnlElement);
+                
+                // Add trade count
+                const tradeCount = document.createElement('div');
+                tradeCount.className = 'day-trade-count';
+                tradeCount.textContent = `${dayTrades.length} trade${dayTrades.length !== 1 ? 's' : ''}`;
+                dayElement.appendChild(tradeCount);
+                
+                dayElement.classList.add('has-trades');
+            }
+            
+            // Add click event to view trades for this day
+            dayElement.addEventListener('click', function() {
+                viewDayTrades(dateStr, day);
+            });
+            
+            calendarDays.appendChild(dayElement);
+        }
+        
+        // Add empty cells for days after the last day of the month
+        const totalCells = 42; // 6 rows x 7 days
+        const filledCells = adjustedStartingDay + daysInMonth;
+        const remainingCells = totalCells - filledCells;
+        
+        for (let i = 0; i < remainingCells; i++) {
+            const emptyDay = document.createElement('div');
+            emptyDay.className = 'calendar-day other-month';
+            
+            const dayNumElement = document.createElement('div');
+            dayNumElement.className = 'day-number';
+            dayNumElement.textContent = i + 1;
+            emptyDay.appendChild(dayNumElement);
+            
+            calendarDays.appendChild(emptyDay);
+        }
+    }
+    
+    function viewDayTrades(dateStr, day) {
+        const modal = document.getElementById('day-details-modal');
+        const modalTitle = document.getElementById('modal-date-title');
+        const tradesList = document.getElementById('day-trades-list');
+        const noTradesMsg = document.getElementById('no-trades-for-day');
+        
+        // Store the selected day for adding trades
+        selectedDayForTrade = dateStr;
+        
+        // Format date for display - FIXED: Use the actual day passed to the function
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        const displayDate = `${monthNames[currentDate.getMonth()]} ${day}, ${currentDate.getFullYear()}`;
+        
+        modalTitle.textContent = `Trades for ${displayDate}`;
+        
+        // Get trades for this day
+        const trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
+        const dayTrades = trades.filter(trade => trade.openDate === dateStr);
+        
+        // Clear existing list
+        tradesList.innerHTML = '';
+        
+        if (dayTrades.length === 0) {
+            noTradesMsg.style.display = 'block';
+            tradesList.style.display = 'none';
+        } else {
+            noTradesMsg.style.display = 'none';
+            tradesList.style.display = 'block';
+            
+            // Add trades to list
+            dayTrades.forEach(trade => {
+                const tradeItem = document.createElement('div');
+                tradeItem.className = 'trade-item';
+                
+                const tradeType = document.createElement('div');
+                tradeType.className = `trade-type ${trade.pnl >= 0 ? 'Win' : 'Loss'}`;
+                tradeType.textContent = trade.pnl >= 0 ? 'W' : 'L';
+                
+                const tradeDetails = document.createElement('div');
+                tradeDetails.className = 'trade-details';
+                
+                const tradeAmount = document.createElement('div');
+                tradeAmount.className = 'trade-amount';
+                tradeAmount.textContent = `$${Math.abs(trade.pnl).toFixed(2)} ${trade.pnl >= 0 ? 'Profit' : 'Loss'}`;
+                tradeAmount.classList.add(trade.pnl >= 0 ? 'positive' : 'negative');
+                
+                const tradeInfo = document.createElement('div');
+                tradeInfo.className = 'trade-info';
+                tradeInfo.textContent = `${trade.symbolSize} ${trade.direction} • ${trade.contracts} contracts`;
+                
+                tradeDetails.appendChild(tradeAmount);
+                tradeDetails.appendChild(tradeInfo);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-btn delete';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    showDeleteConfirmation(trade.id);
+                });
+                
+                tradeItem.appendChild(tradeType);
+                tradeItem.appendChild(tradeDetails);
+                tradeItem.appendChild(deleteBtn);
+                
+                tradesList.appendChild(tradeItem);
+            });
+        }
+        
+        // Show the modal
+        modal.style.display = 'flex';
+    }
+    
+    function openAddTradeForSelectedDay() {
+        if (selectedDayForTrade) {
+            document.getElementById('trade-open-date').value = selectedDayForTrade;
+            document.getElementById('trade-exit-date').value = selectedDayForTrade;
+            document.querySelector('.tab-button[data-tab="add-trade-tab"]').click();
+            document.getElementById('day-details-modal').style.display = 'none';
+        }
+    }
+    
+    function setupModal() {
+        const modal = document.getElementById('day-details-modal');
+        const closeBtn = document.querySelector('.close-modal');
+        
+        // Close modal when clicking the X
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    function showDeleteConfirmation(id) {
+        // Remove any existing confirmation dialog
+        const existingDialog = document.querySelector('.confirmation-dialog');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+        
+        // Create confirmation dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'confirmation-dialog';
+        dialog.innerHTML = `
+            <div class="confirmation-title">Confirm Deletion</div>
+            <div class="confirmation-message">Are you sure you want to delete this trade? This action cannot be undone.</div>
+            <div class="confirmation-buttons">
+                <button class="confirmation-button cancel-delete">Cancel</button>
+                <button class="confirmation-button confirm-delete">Delete</button>
+            </div>
+        `;
+        
+        // Add event listeners
+        dialog.querySelector('.cancel-delete').addEventListener('click', function() {
+            dialog.remove();
+        });
+        
+        dialog.querySelector('.confirm-delete').addEventListener('click', function() {
+            deleteTradeById(id);
+            dialog.remove();
+        });
+        
+        // Add to the body
+        document.body.appendChild(dialog);
+        
+        // Close dialog when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === dialog) {
+                dialog.remove();
+            }
+        });
+    }
+    
+    function deleteTradeById(id) {
+        // Get trades from localStorage
+        let trades = JSON.parse(localStorage.getItem('futuresTrades')) || [];
+        
+        // Find index of trade with given id
+        const index = trades.findIndex(trade => trade.id === id);
+        
+        if (index !== -1) {
+            // Remove trade at index
+            trades.splice(index, 1);
+            
+            // Save updated trades
+            localStorage.setItem('futuresTrades', JSON.stringify(trades));
+            
+            // UPDATE: Check if we're in the modal context and if there are still trades for the selected day
+            const modal = document.getElementById('day-details-modal');
+            if (modal.style.display === 'flex' && selectedDayForTrade) {
+                // Get remaining trades for the selected day
+                const remainingTrades = trades.filter(trade => trade.openDate === selectedDayForTrade);
+                
+                if (remainingTrades.length > 0) {
+                    // If there are still trades, refresh the modal content but keep it open
+                    // Extract day from selectedDayForTrade
+                    const day = parseInt(selectedDayForTrade.split('-')[2]);
+                    viewDayTrades(selectedDayForTrade, day);
+                } else {
+                    // If no trades left, close the modal
+                    modal.style.display = 'none';
+                }
+            }
+            
+            // Update display
+            loadTradeHistory();
+            generateCalendar();
+        }
+    }
+    
+    // Load sample data for current month instead of February 2023
+    function loadSampleData() {
+        // Check if we already have data
+        if (localStorage.getItem('futuresTrades')) return;
+        
+        const today = new Date(2025, 10, 20); // November 20, 2025
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        
+        const sampleTrades = [];
+        
+        // Create sample data for a few random days in the current month
+        const sampleDays = [1, 3, 5, 8, 10, 15, 18, 20, 22, 25]; // Some random days including Nov 20
+        
+        sampleDays.forEach(day => {
+            if (day <= daysInMonth) {
+                // Create 1-3 sample trades for each sample day
+                const numTrades = Math.floor(Math.random() * 3) + 1;
+                let dayPnL = 0;
+                
+                for (let i = 0; i < numTrades; i++) {
+                    // Random PnL between -200 and 300
+                    const pnl = (Math.random() * 500) - 200;
+                    dayPnL += pnl;
+                    
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    
+                    sampleTrades.push({
+                        id: Date.now() + i + day * 1000,
+                        assetClass: 'Equity Index Futures',
+                        symbolSize: 'ESH4 - E-mini S&P 50C',
+                        openDate: dateStr,
+                        exitDate: dateStr,
+                        entry: 19000,
+                        exit: 19000 + (pnl / 20),
+                        direction: pnl >= 0 ? 'Long/Buy' : 'Short/Sell',
+                        strategy: 'Up Trend/L.B',
+                        timeFrame: '1 Hr',
+                        stopLoss: 18975,
+                        status: pnl >= 0 ? 'Win' : 'Loss',
+                        rr: '1:3',
+                        contracts: 1,
+                        commission: 2.50,
+                        pnl: pnl,
+                        pnlPercent: (pnl / 1200) * 100,
+                        notes: 'Sample trade data',
+                        timestamp: new Date(dateStr).toISOString()
+                    });
+                }
+            }
+        });
+        
+        localStorage.setItem('futuresTrades', JSON.stringify(sampleTrades));
+        generateCalendar();
+    }
 </script>
 </body>
 </html>
